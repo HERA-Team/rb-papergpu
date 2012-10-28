@@ -27,6 +27,7 @@ spec = Gem::Specification.new do |s|
 
   # Files, Libraries, and Extensions
   s.files = %w[
+    bin/paper_ctl.rb
     bin/pf_bframe.rb
     lib/papergpu.rb
     lib/papergpu/fengine.rb
@@ -37,6 +38,7 @@ spec = Gem::Specification.new do |s|
   #s.autorequire = nil
   #s.bindir = 'bin'
   s.executables = %w[
+    paper_ctl.rb
     pf_bframe.rb
   ]
   #s.default_executable = nil
