@@ -32,5 +32,34 @@ module Paper
       end
     end
 
+    # Returns the XAUI status bits from the given GbE core.  Reserved and/or
+    # undocumented bits are masked to 0.
+    #
+    # Least significant 8 bits are: 0BSSSS00
+    #
+    # B=1 means all 4 lanes are bonded
+    # S=1 means a lane is sync'd (4 lanes total)
+    #
+    # Good value is 124; any other value is problematic.
+    def gbe_xaui_status(gbe_core)
+      read(gbe_core, 9) & 0b01111100
+    end
+
+    def switch_xaui_status
+      gbe_xaui_status(:switch_gbe3)
+    end
+
+    def switch_xaui_ok?
+      switch_xaui_status == 0b01111100 # 124
+    end
+
+    def gpu_xaui_status
+      gbe_xaui_status(:gpu_gbe2)
+    end
+
+    def gpu_xaui_ok?
+      gpu_xaui_status == 0b01111100 # 124
+    end
+
   end # class FEngine
 end # module Paper
