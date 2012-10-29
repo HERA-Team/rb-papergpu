@@ -30,7 +30,7 @@ end
 
 
 OPTS = {
-  :intcount => 1024,
+  :intcount => 2048,
   :intdelay => 15,
   :server   => 'redishost',
 }
