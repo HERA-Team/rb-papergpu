@@ -9,6 +9,7 @@ module Paper
 
     # The DEVICE_TYPEMAP Hash guides dynamic method creation.
     DEVICE_TYPEMAP = superclass::DEVICE_TYPEMAP.merge({
+      :ctmode            => :rwreg,
       :delay_0           => :rwreg,
       :delay_1           => :rwreg,
       :delay_2           => :rwreg,
