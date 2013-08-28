@@ -111,7 +111,7 @@ fe_fids.each do |fe, fid|
     eth_sw.set(0x0c00, sw_arp_table)
   end
 
-  # Setup gpu 10 GbE cores
+  # Setup gpu 10 GbE cores and xip registers
   4.times do |i|
     puts "configuring #{fe.host}:eth_#{1}_gpu" if OPTS[:verbose]
     eth_gpu = fe.send("eth_#{i}_gpu")
@@ -127,5 +127,10 @@ fe_fids.each do |fe, fid|
     ## Populate ARP table
     #puts "  ARP table" if OPTS[:verbose]
     #eth_sw.set(0x0c00, sw_arp_table)
+
+    # X engine is hostname "px#{fid-1}-#{i+2}"
+    # (e.g. for FID 0, eth_0_gpu is connected to "px1-2"
+    xip = IPAddr.new(Addrinfo.ip("px#{fid+1}-#{i+2}").ip_address).to_i
+    fe.send("eth_#{i}_xip=", xip)
   end
 end
