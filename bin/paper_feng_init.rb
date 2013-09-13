@@ -4,15 +4,18 @@
 
 require 'rubygems'
 require 'optparse'
+require 'ipaddr'
 require 'papergpu/roach2_fengine'
-#require 'redis'
+require 'redis'
 #require 'hashpipe/keys'
 #
 #include Hashpipe::RedisKeys
 
 
 OPTS = {
+  :ctmode    => 0,
   :redishost => 'redishost',
+  :sync      => false,
   :verbose   => true
 }
 
@@ -26,9 +29,16 @@ OP = OptionParser.new do |op|
   op.separator('and FID will be N-1 (e.g. "pf1" will get FID=0).');
   op.separator('')
   op.separator('Options:')
+  op.on('-m', '--mode=CTMODE', Integer,
+        "Specify corner turner mode [#{OPTS[:ctmode]}]") do |o|
+    OPTS[:ctmode] = o
+  end
   op.on('-r', '--redishost=NAME',
         "Host running redis-server [#{OPTS[:redishost]}]") do |o|
     OPTS[:redishost] = o
+  end
+  op.on('-s', '--[no-]sync', "Arm sync generator [#{OPTS[:sync]}]") do |o|
+    OPTS[:sync] = o
   end
   op.on('-v', '--[no-]verbose', "Be verbose [#{OPTS[:verbose]}]") do |o|
     OPTS[:verbose] = o
@@ -41,6 +51,14 @@ OP = OptionParser.new do |op|
 end
 OP.parse!
 #p OPTS; exit
+
+# String representation of ctmodes
+CTMODES = [
+  '8 F engines', # ctmode 0
+  '4 F engines', # ctmode 1
+  '2 F engines', # ctmode 2
+  '1 F engine'   # ctmode 3
+]
 
 # Parse host and FIDs from command line arguments
 host_fids = ARGV.map do |hf|
@@ -64,23 +82,34 @@ end
 # Create list of FIDs
 fids = host_fids.map {|host, fid| fid}
 
-# Create Roach2Fengine objects and set FID registers
+# Create Roach2Fengine objects
 fe_fids = host_fids.map do |host, fid|
   puts "connecting to #{host}" if OPTS[:verbose]
-  pf = Paper::Roach2Fengine.new(host)
+  fe = Paper::Roach2Fengine.new(host)
   # Verify that device is already programmed
-  if ! pf.programmed?
+  if ! fe.programmed?
     puts "error: #{host} is not programmed"
     exit 1
   end
   # Verify that given design appears to be the roach2_fengine
-  if ! pf.listdev.grep('eth_0_xip').any?
+  if ! fe.listdev.grep('eth_0_xip').any?
     puts "error: #{host} is not programmed with an roach2_fengine design."
     exit 1
   end
-  puts "setting #{host} FID to #{fid}" if OPTS[:verbose]
-  pf.fid = fid
-  [pf, fid]
+  [fe, fid]
+end
+
+# Disable network transmission
+fe_fids.each do |fe, fid|
+  puts "disabling #{fe.host} network transmission" if OPTS[:verbose]
+  fe.eth_sw_en = 0
+  fe.eth_gpu_en = 0
+end
+
+# Set FID registers
+fe_fids.each do |fe, fid|
+  puts "setting #{fe.host} FID to #{fid}" if OPTS[:verbose]
+  fe.fid = fid
 end
 
 # Setup details ofr 10 GbE cores
@@ -96,15 +125,15 @@ gpu_ip_base  =      0x0a0a_0000
 fe_fids.each do |fe, fid|
   # Setup switch 10 GbE cores
   4.times do |i|
-    puts "configuring #{fe.host}:eth_#{1}_sw" if OPTS[:verbose]
+    puts "configuring #{fe.host}:eth_#{i}_sw" if OPTS[:verbose]
     eth_sw = fe.send("eth_#{i}_sw")
     # IP
     ip = sw_ip_base + 32 + 8*i + fid
-    printf("  IP  %08x\n", ip) if OPTS[:verbose]
+    printf("  IP  %s\n", IPAddr.new(ip, Socket::AF_INET)) if OPTS[:verbose]
     eth_sw.ip = ip
     # MAC
     mac = sw_mac_base + 32 + 8*i + fid
-    printf("  MAC %012x\n", mac) if OPTS[:verbose]
+    printf("  MAC %s\n", ('%012x'%mac).scan(/../).join(':')) if OPTS[:verbose]
     eth_sw.mac = mac
     # Populate ARP table
     puts "  ARP table" if OPTS[:verbose]
@@ -113,16 +142,16 @@ fe_fids.each do |fe, fid|
 
   # Setup gpu 10 GbE cores and xip registers
   4.times do |i|
-    puts "configuring #{fe.host}:eth_#{1}_gpu" if OPTS[:verbose]
+    puts "configuring #{fe.host}:eth_#{i}_gpu" if OPTS[:verbose]
     eth_gpu = fe.send("eth_#{i}_gpu")
 
     # IP
     ip = gpu_ip_base + 512 + 256*i + fid + 1
-    printf("  IP  %08x\n", ip) if OPTS[:verbose]
+    printf("  IP  %s\n", IPAddr.new(ip, Socket::AF_INET)) if OPTS[:verbose]
     eth_gpu.ip = ip
     # MAC
     mac = gpu_mac_base + 512 + 256*i + fid + 1
-    printf("  MAC %012x\n", mac) if OPTS[:verbose]
+    printf("  MAC %s\n", ('%012x'%mac).scan(/../).join(':')) if OPTS[:verbose]
     eth_gpu.mac = mac
     ## Populate ARP table
     #puts "  ARP table" if OPTS[:verbose]
@@ -130,7 +159,61 @@ fe_fids.each do |fe, fid|
 
     # X engine is hostname "px#{fid-1}-#{i+2}"
     # (e.g. for FID 0, eth_0_gpu is connected to "px1-2"
-    xip = IPAddr.new(Addrinfo.ip("px#{fid+1}-#{i+2}").ip_address).to_i
-    fe.send("eth_#{i}_xip=", xip)
+    xip = IPAddr.new(Addrinfo.ip("px#{fid+1}-#{i+2}").ip_address)
+    printf("  XIP %s\n", xip) if OPTS[:verbose]
+    fe.send("eth_#{i}_xip=", xip.to_i)
   end
 end
+
+# Set ctmode
+fe_fids.each do |fe, fid|
+  modestr = CTMODES[OPTS[:ctmode]]
+  puts "setting #{fe.host} corner turner mode (#{modestr})" if OPTS[:verbose]
+  fe.ctmode = OPTS[:ctmode]
+end
+
+# Arm sync generator
+if OPTS[:sync]
+  puts "arming sync generator(s)" if OPTS[:verbose]
+  # We are potentially doing a batch of F engines so we want to get the arm
+  # signals delivered to all F engines as close as possible.  Because of this,
+  # we perform the arming "manually" rather than using the #arm_sync method on
+  # each F engine.
+  fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 0)}
+  # Sleep until just after top of next second
+  sleep(1.1 - (Time.now.to_f % 1))
+  # Arm all the F engines
+  fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 1)}
+  # Compute sync time
+  sync_time = Time.now.to_i + 1
+  # Sleep until just adter top of next second (to wait for sync)
+  sleep(1.1 - (Time.now.to_f % 1))
+  fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 0)}
+  # Store sync time in redis
+  puts "storing sync time in redis on #{OPTS[:redishost]}" if OPTS[:verbose]
+  redis = Redis.new(:host => OPTS[:redishost])
+  redis['roachf_init_time'] = sync_time
+end
+
+# Reset network cores
+fe_fids.each do |fe, fid|
+  puts "resetting #{fe.host} network interfaces" if OPTS[:verbose]
+  [0, 1, 0].each do |v|
+    fe.eth_cnt_rst = v
+    fe.eth_gpu_rst = v
+    fe.eth_sw_rst = v
+  end
+end
+
+# Enable network transmission
+fe_fids.each do |fe, fid|
+  puts "enable #{fe.host} transmission to X engines" if OPTS[:verbose]
+  fe.eth_gpu_en = 1
+end
+
+fe_fids.each do |fe, fid|
+  puts "enable #{fe.host} transmission to switch" if OPTS[:verbose]
+  fe.eth_sw_en = 1
+end
+
+puts 'done' if OPTS[:verbose]
