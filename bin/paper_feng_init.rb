@@ -52,6 +52,11 @@ end
 OP.parse!
 #p OPTS; exit
 
+if ARGV.empty?
+  puts OP.help
+  exit
+end
+
 # String representation of ctmodes
 CTMODES = [
   '8 F engines', # ctmode 0
