@@ -92,6 +92,10 @@ module Paper
       :seed_1            => :rwreg,
       :seed_2            => :rwreg,
       :seed_3            => :rwreg,
+      :snap_0_bram       => :snap,
+      :snap_0_ctrl       => :skip,
+      :snap_0_status     => :skip,
+      :snap_0_sel        => :rwreg,
       :sync_arm          => :skip, # Use specific methods
       :sync_count        => :roreg,
       :sync_period       => :roreg,
