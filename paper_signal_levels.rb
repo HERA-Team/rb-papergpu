@@ -10,6 +10,7 @@ OPTS = OpenStruct.new
 OPTS.in_rms = 16
 OPTS.nshift = 12
 OPTS.eq = 1500
+OPTS.pfb_shift = 1
 
 OptionParser.new do |op|
   op.program_name = File.basename($0)
@@ -25,6 +26,9 @@ OptionParser.new do |op|
   op.on('-f', '--fft=NSHIFT', Integer, "Number of shifts in the fft [#{OPTS.nshift}]") do |o|
     OPTS.nshift = o
   end
+  op.on('-p', '--pfb=NSHIFT', Integer, "Number of shifts in the pfb [#{OPTS.pfb_shift}]") do |o|
+    OPTS.pfb_shift = o
+  end
   op.on('-e', '--eq=COEF', Float, "Equalizer coefficient [#{OPTS.eq}]") do |o|
     OPTS.eq = (128*o).round / 128.0
   end
@@ -36,7 +40,7 @@ end.parse!
 
 NSTAGES = 12
 
-pf_rms, fft_rms, reim_rms, eq_rms, quant_rms = paper_levels(OPTS.in_rms, NSTAGES, (1<<OPTS.nshift)-1, OPTS.eq)
+pf_rms, fft_rms, reim_rms, eq_rms, quant_rms = paper_levels(OPTS.in_rms, NSTAGES, (1<<OPTS.nshift)-1, OPTS.eq, OPTS.pfb_shift)
 
 printf "ADC   output RMS %8.4f counts\n", OPTS.in_rms
 printf "PFB   output RMS %f\n", pf_rms
