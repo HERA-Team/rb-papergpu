@@ -95,14 +95,22 @@ def paper_levels(adc_rms, fft_stages, fft_shift, eq, pf_shift=1)
   # Make sure fft_shift doesn't have any extra bits
   fft_shift &= (1<<fft_stages)-1
   fft_rms = pf_rms * 2**(0.5*fft_stages-fft_shift.bit_count)
+
   # Real/imag component RMS is 1/sqrt(2) of eq_rms
   reim_rms = fft_rms * 2**-0.5
+
   # Eq gain is eq gain
   eq_rms = reim_rms * eq
-  # Quantization gain is computed and applied by qrms function, but we need to
-  # scale by 2**-4 (actually, 2**(4-adc_bits)) beforehand since quantization
-  # happens on top four bits.
-  quant_rms = qrms(eq_rms * 2**-4)
+
+  # Eq rms scaled to pre-quantizer integer units is:
+  # eq_rms * 8 / 128 == eq_rms / 16
+  # The divide by 128 converts ADC units into normalized value in the interval
+  # [-1, +1), and the multiply by 8 converts to integer quantization units
+  # instead of the normalized 2**-3 quantization units used internally.
+  eq_rms_int = eq_rms / 16
+
+  # Quantization gain is computed and applied by qrms function.
+  quant_rms = qrms(eq_rms_int)
   # Return them all
-  [pf_rms, fft_rms, reim_rms, eq_rms, quant_rms]
+  [pf_rms, fft_rms, reim_rms, eq_rms_int, quant_rms]
 end
