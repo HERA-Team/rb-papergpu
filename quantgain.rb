@@ -83,8 +83,14 @@ end
 
 # Compute signal levels for Gaussian noise passing through the PAPER F engine.
 def paper_levels(adc_rms, fft_stages, fft_shift, eq, pf_shift=1)
-  # Polyphase filter gain for noise is 0.897484925825201 * 2**(-pf_shift)
-  pf_rms = adc_rms * 0.897484925825201 * 2**-pf_shift
+  # Polyphase filter gain for noise is 0.894165524491819 * 2**(-pf_shift)
+  # The 0.894165524491819 factor is for a 2**11 channel 4-tap CASPER PFB using
+  # a "hamming" window.  The matlab code to compute that gain is:
+  #
+  #   h=reshape(pfb_coeff_gen_calc(11,4,'hamming',1,1,1,-1,0),2^11,4);
+  #   mean(sqrt(sum(h.^2, 2)))
+  pf_rms = adc_rms * 0.894165524491819 * 2**-pf_shift
+
   # FFT gain for noise is 2**0.5 for each stage and 2**-1 for each shift
   # Make sure fft_shift doesn't have any extra bits
   fft_shift &= (1<<fft_stages)-1
