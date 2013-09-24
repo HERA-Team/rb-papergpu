@@ -45,7 +45,13 @@ pf_rms, fft_rms, reim_rms, eq_rms, quant_rms = paper_levels(OPTS.in_rms, NSTAGES
 printf "ADC   output RMS %8.4f counts\n", OPTS.in_rms
 printf "PFB   output RMS %8.4f counts\n", pf_rms
 printf "FFT   output RMS %8.4f counts\n", fft_rms
-printf "ReIm  output RMS %8.4f counts\n", reim_rms
+printf "ReIm  output RMS %8.4f counts", reim_rms
+if reim_rms > 128
+  printf " <-- WARNING: RMS exceeds dynamic range"
+elsif reim_rms > 32
+  printf " <-- WARNING: headroom is only %.1f sigma", 128/reim_rms
+end
+puts
 printf "EQ    output RMS %8.4f quants\n", eq_rms
 printf "QUANT output RMS %8.4f quants\n", quant_rms
 printf "AUTOCORRELATION  %8.4f quants**2\n", quant_rms**2 * 2
