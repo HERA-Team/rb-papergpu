@@ -82,6 +82,34 @@ class Integer
 end
 
 # Compute signal levels for Gaussian noise passing through the PAPER F engine.
+#
+# +adc_rms+ is the RMS of the input in ADC counts.
+# +fft_stages+ is the number of stages in the FFT.
+# +fft_shift+ is the number of stages in the FFT that downshift their output.
+# +eq+ is the equalization factor.
+# +pf_shift+ is the number of downshifts in the PFB.  The version of the CASPER
+# PFB block used by PAPER downshifts the PFB output by one bit, so this
+# parameter defaults to 1.
+#
+# Returns an array of RMS values plus autocorrelation power:
+#
+#   [pfb_rms, fft_rms, reim_rms, eq_rms, quant_rms, auto_pwr]
+#
+# +pfb_rms+ is the RMS of the (real) PFB output in ADC counts.
+#
+# +fft_rms+ is the RMS of the (complex) FFT output in ADC counts.
+#
+# +reim_rms+ is the RMS of real or imaginary component of the FFT output in ADC
+# counts.
+#
+# + eq_rms is the RMS of the equalizer output just before quantization in
+# quantization units (aka "quants").
+#
+# +quant_rms+ is the RMS of the 4-bit quantizer output in quantization units
+# (quants).
+#
+# +auto_pwr+ is the autocorrelation power (normalized by the number of samples
+# integration) in quants**2 (i.e. quants squared).
 def paper_levels(adc_rms, fft_stages, fft_shift, eq, pf_shift=1)
   # Polyphase filter gain for noise is 0.894165524491819 * 2**(-pf_shift)
   # The 0.894165524491819 factor is for a 2**11 channel 4-tap CASPER PFB using
