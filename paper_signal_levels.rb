@@ -9,8 +9,8 @@ require './quantgain'
 OPTS = OpenStruct.new
 OPTS.in_rms = 16
 OPTS.nshift = 12
-OPTS.eq = 1500
 OPTS.pfb_shift = 1
+OPTS.eq = Rational(1500)
 
 OptionParser.new do |op|
   op.program_name = File.basename($0)
@@ -29,8 +29,8 @@ OptionParser.new do |op|
   op.on('-p', '--pfb=NSHIFT', Integer, "Number of shifts in the pfb [#{OPTS.pfb_shift}]") do |o|
     OPTS.pfb_shift = o
   end
-  op.on('-e', '--eq=COEF', Float, "Equalizer coefficient [#{OPTS.eq}]") do |o|
-    OPTS.eq = (128*o).round / 128.0
+  op.on('-e', '--eq=COEF', "Equalizer coefficient [#{OPTS.eq}]") do |o|
+    OPTS.eq = Rational((128*Rational(o)).round, 128)
   end
   op.on_tail('-h','--help','Show this message') do
     puts op.help
