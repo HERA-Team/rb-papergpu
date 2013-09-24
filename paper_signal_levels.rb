@@ -43,9 +43,9 @@ NSTAGES = 11
 pf_rms, fft_rms, reim_rms, eq_rms, quant_rms = paper_levels(OPTS.in_rms, NSTAGES, (1<<OPTS.nshift)-1, OPTS.eq, OPTS.pfb_shift)
 
 printf "ADC   output RMS %8.4f counts\n", OPTS.in_rms
-printf "PFB   output RMS %f\n", pf_rms
-printf "FFT   output RMS %f\n", fft_rms
-printf "ReIm  output RMS %f\n", reim_rms
-printf "EQ    output RMS %f\n", eq_rms
-printf "QUANT output RMS %f\n", quant_rms
-printf "AUTOCORRELATION  %f\n", quant_rms**2 * 2
+printf "PFB   output RMS %8.4f counts\n", pf_rms
+printf "FFT   output RMS %8.4f counts\n", fft_rms
+printf "ReIm  output RMS %8.4f counts\n", reim_rms
+printf "EQ    output RMS %8.4f quants\n", eq_rms
+printf "QUANT output RMS %8.4f quants\n", quant_rms
+printf "AUTOCORRELATION  %8.4f quants**2\n", quant_rms**2 * 2
