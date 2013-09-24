@@ -38,7 +38,7 @@ OptionParser.new do |op|
   end
 end.parse!
 
-NSTAGES = 12
+NSTAGES = 11
 
 pf_rms, fft_rms, reim_rms, eq_rms, quant_rms = paper_levels(OPTS.in_rms, NSTAGES, (1<<OPTS.nshift)-1, OPTS.eq, OPTS.pfb_shift)
 
