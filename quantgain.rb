@@ -6,6 +6,8 @@ require 'gsl'
 # pre-quantizated Gaussian noise.  Assumes quantization is symmetric (i.e. no
 # -8 values).
 def qrms(rms=1)
+  # Handle trivial boundary condition
+  return 0 if rms <= 0
   # Edges of bins [0.0, 0.5, 1.5, ..., 7.5] for positive half
   # Note that first bin is half width
   xe = GSL::Vector.indgen(9,-0.5); xe[0] = 0
