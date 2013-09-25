@@ -413,5 +413,87 @@ module Paper
     # Set the value (0 or 1) of the "switch" ethernet enable bit.
     def eth_sw_en=(val); eth_ctrl_bit(0, val); end
 
+    # Perform a snapshot of the specified source.  The following +src+ values
+    # are supported:
+    #
+    #   :input Snapshot of the input mux output for inputs 0,1,2,3
+    #   :pfb   Snapshot of the PFB output for input 0
+    #   :fft   Snapshot of the FFT output for inputs 0,16
+    #   :eq    Snapshot of the EQ block output for inputs 0,1,2,3,16.17.18.19
+    #
+    # The return value depends on the source:
+    #
+    #   :input - Output is NArray.int(4,4096)    [in%4, time]
+    #   :pfb   - Output is NArray.float(1,4096)  [time]
+    #   :fft   - Output is NArray.float(2,2048)  [time, in/16]
+    #   :eq    - Output is NArray.int(4,2048,2)  [in%16, time, in/16]
+    #
+    # NOTE: The current gateware does not sync the snapshot, so the multiplexed
+    # signals (i.e. fft and eq) are indeterminate as to which sample
+    # corresponds to which of the multiplexed inputs.  Because of this, these
+    # signals are NOT demultiplexed by the code, so the return types for +:ftt+
+    # and +:eq+ are:
+    #
+    #   :fft   - Output is NArray.int(4096)
+    #   :eq    - Output is NArray.int(4,4096)
+    #
+    # If the second parameter, +trig+, is false, a new snapshot will NOT be
+    # triggered and the existing contents of the snapshot memory will be
+    # interpretted as if coming from +src+, but no validation is performed to
+    # ensure that the contents really did come from +src+.
+    def snapshot(src=:input, trig=true)
+      @snap_0 ||= snap_0
+      case src
+      when :input
+        if trig
+          self.snap_0_sel = 0
+          @snap_0.trigger
+        end
+        d = @snap_0[0,4096].to_type_as_binary(NArray::BYTE)
+        # Convert back to int and restore negative values
+        d = d.to_type(NArray::INT).add!(128).mod!(256).sbt!(128)
+        d.reshape!(4,4096)
+      when :pfb
+        if trig
+          self.snap_0_sel = 1
+          @snap_0.trigger
+        end
+        # Convert to float and divide by 2**10 scaling factor to get units of
+        # ADC counts.
+        @snap_0[0,4096].to_type(NArray::FLOAT).div!(1<<10)
+      when :fft
+        if trig
+          self.snap_0_sel = 2
+          @snap_0.trigger
+        end
+        di = @snap_0[0,4096]
+
+        d = di
+        # Needs syncing...
+        #d = NArray.float(2048,2)
+        #d[   0..1023, 0] = di[   0..1023]
+        #d[1024..2047, 1] = di[1024..2047]
+        #d[   0..1023, 0] = di[2048..3071]
+        #d[1024..2047, 1] = di[3076..4095]
+
+        # Convert to float and divide by 2**10 scaling factor to get units of
+        # ADC counts.
+        d.to_type(NArray::FLOAT).div!(1<<10)
+      when :eq
+        if trig
+          self.snap_0_sel = 3
+          @snap_0.trigger
+        end
+        d = @snap_0[0,4096].to_type_as_binary(NArray::BYTE)
+        # Convert back to int
+        d = d.to_type(NArray::INT)
+        # Needs syncing...
+        d.reshape!(4,4096)
+        #d.reshape!(4,2048,2)
+      else
+        raise "unsupported snap source #{src}"
+      end
+    end
+
   end # class Roach2Fengine
 end # module Paper
