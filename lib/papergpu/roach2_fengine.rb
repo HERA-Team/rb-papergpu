@@ -288,7 +288,7 @@ module Paper
     # Gets or sets EQ coeffs.  Valid input values are in the range 0..31.
     # Valid channel values are in the range 0..1023.  Valid eq_val values, when
     # setting eq coefficients, are in the range 0 to 2047+127/128 (the value is
-    # treated as a Fix18_7).  If eq_val is not given, this function returns the
+    # treated as a UFix18_7).  If eq_val is not given, this function returns the
     # reqested eq values.  If eq_val is given, it should be a single value.
     #
     # If input responds to #each (or #map), then the eq values will be set (or
