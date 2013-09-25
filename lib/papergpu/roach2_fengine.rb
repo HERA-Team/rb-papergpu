@@ -495,5 +495,28 @@ module Paper
       end
     end
 
+    # Takes an RMS sample and computes RMS for all 32 inputs based on sum and
+    # sumsq.  Gateware accumulates sum and sum of squares for 2**16 (65536)
+    # samples.
+    def rms(samples=1)
+      samples = samples.to_i rescue 1
+      samples = 1 if samples < 1
+      sss = NArray.float(64)
+      samples.times do
+        # Take RMS sample
+        self.input_rms_enable = 1
+        sleep 0.0005
+        self.input_rms_enable = 0
+        # Read out and accumulate RMS levels
+        sss.add!(input_rms_levels[0,64])
+      end
+      # Take mean and reshape
+      sss.div!(65536*samples).reshape!(2, 32)
+      # Compute variance as mean_of_square - square_of_mean
+      var = sss[1,nil] - sss[0,nil].mul!(sss[0,nil])
+      # RMS is sqrt of variance
+      var ** 0.5
+    end
+
   end # class Roach2Fengine
 end # module Paper
