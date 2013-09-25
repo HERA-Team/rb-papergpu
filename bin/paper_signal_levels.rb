@@ -4,7 +4,7 @@
 
 require 'optparse'
 require 'ostruct'
-require './quantgain'
+require 'paper/quantgain'
 
 OPTS = OpenStruct.new
 OPTS.in_rms = 16
