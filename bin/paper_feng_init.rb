@@ -16,7 +16,7 @@ OPTS = {
   :ctmode    => 0,
   :redishost => 'redishost',
   :sync      => false,
-  :verbose   => true
+  :verbose   => false
 }
 
 OP = OptionParser.new do |op|
@@ -80,7 +80,7 @@ host_fids = ARGV.map do |hf|
     end
     fid = Integer(fid) - 1
   end
-  puts "initializing #{host} as FID #{fid}" if OPTS[:verbose]
+  puts "initializing #{host} as FID #{fid}"
   [host, fid]
 end
 
@@ -89,7 +89,7 @@ fids = host_fids.map {|host, fid| fid}
 
 # Create Roach2Fengine objects
 fe_fids = host_fids.map do |host, fid|
-  puts "connecting to #{host}" if OPTS[:verbose]
+  puts "connecting to #{host}"
   fe = Paper::Roach2Fengine.new(host)
   # Verify that device is already programmed
   if ! fe.programmed?
@@ -105,15 +105,16 @@ fe_fids = host_fids.map do |host, fid|
 end
 
 # Disable network transmission
+puts "disabling network transmission"
 fe_fids.each do |fe, fid|
-  puts "disabling #{fe.host} network transmission" if OPTS[:verbose]
+  puts "  disabling #{fe.host} network transmission" if OPTS[:verbose]
   fe.eth_sw_en = 0
   fe.eth_gpu_en = 0
 end
 
 # Set FID registers
 fe_fids.each do |fe, fid|
-  puts "setting #{fe.host} FID to #{fid}" if OPTS[:verbose]
+  puts "setting #{fe.host} FID to #{fid}"
   fe.fid = fid
 end
 
@@ -127,36 +128,37 @@ sw_arp_table[0,nil] = (sw_mac_base >> 32)
 gpu_mac_base = 0x0202_c0a8_0000
 gpu_ip_base  =      0x0a0a_0000
 
+puts "configuring 10 GbE interfaces"
 fe_fids.each do |fe, fid|
   # Setup switch 10 GbE cores
   4.times do |i|
-    puts "configuring #{fe.host}:eth_#{i}_sw" if OPTS[:verbose]
+    puts "  configuring #{fe.host}:eth_#{i}_sw" if OPTS[:verbose]
     eth_sw = fe.send("eth_#{i}_sw")
     # IP
     ip = sw_ip_base + 32 + 8*i + fid
-    printf("  IP  %s\n", IPAddr.new(ip, Socket::AF_INET)) if OPTS[:verbose]
+    printf("    IP  %s\n", IPAddr.new(ip, Socket::AF_INET)) if OPTS[:verbose]
     eth_sw.ip = ip
     # MAC
     mac = sw_mac_base + 32 + 8*i + fid
-    printf("  MAC %s\n", ('%012x'%mac).scan(/../).join(':')) if OPTS[:verbose]
+    printf("    MAC %s\n", ('%012x'%mac).scan(/../).join(':')) if OPTS[:verbose]
     eth_sw.mac = mac
     # Populate ARP table
-    puts "  ARP table" if OPTS[:verbose]
+    puts "    ARP table" if OPTS[:verbose]
     eth_sw.set(0x0c00, sw_arp_table)
   end
 
   # Setup gpu 10 GbE cores and xip registers
   4.times do |i|
-    puts "configuring #{fe.host}:eth_#{i}_gpu" if OPTS[:verbose]
+    puts "  configuring #{fe.host}:eth_#{i}_gpu" if OPTS[:verbose]
     eth_gpu = fe.send("eth_#{i}_gpu")
 
     # IP
     ip = gpu_ip_base + 512 + 256*i + fid + 1
-    printf("  IP  %s\n", IPAddr.new(ip, Socket::AF_INET)) if OPTS[:verbose]
+    printf("    IP  %s\n", IPAddr.new(ip, Socket::AF_INET)) if OPTS[:verbose]
     eth_gpu.ip = ip
     # MAC
     mac = gpu_mac_base + 512 + 256*i + fid + 1
-    printf("  MAC %s\n", ('%012x'%mac).scan(/../).join(':')) if OPTS[:verbose]
+    printf("    MAC %s\n", ('%012x'%mac).scan(/../).join(':')) if OPTS[:verbose]
     eth_gpu.mac = mac
     ## Populate ARP table
     #puts "  ARP table" if OPTS[:verbose]
@@ -165,21 +167,22 @@ fe_fids.each do |fe, fid|
     # X engine is hostname "px#{fid-1}-#{i+2}"
     # (e.g. for FID 0, eth_0_gpu is connected to "px1-2"
     xip = IPAddr.new(Addrinfo.ip("px#{fid+1}-#{i+2}").ip_address)
-    printf("  XIP %s\n", xip) if OPTS[:verbose]
+    printf("    XIP %s\n", xip) if OPTS[:verbose]
     fe.send("eth_#{i}_xip=", xip.to_i)
   end
 end
 
 # Set ctmode
+modestr = CTMODES[OPTS[:ctmode]]
+puts "setting corner turner mode #{OPTS[:ctmode]} (#{modestr})"
 fe_fids.each do |fe, fid|
-  modestr = CTMODES[OPTS[:ctmode]]
-  puts "setting #{fe.host} corner turner mode (#{modestr})" if OPTS[:verbose]
+  puts "  setting #{fe.host} corner turner mode #{OPTS[:ctmode]} (#{modestr})" if OPTS[:verbose]
   fe.ctmode = OPTS[:ctmode]
 end
 
 # Arm sync generator
 if OPTS[:sync]
-  puts "arming sync generator(s)" if OPTS[:verbose]
+  puts "arming sync generator(s)"
   # We are potentially doing a batch of F engines so we want to get the arm
   # signals delivered to all F engines as close as possible.  Because of this,
   # we perform the arming "manually" rather than using the #arm_sync method on
@@ -195,14 +198,15 @@ if OPTS[:sync]
   sleep(1.1 - (Time.now.to_f % 1))
   fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 0)}
   # Store sync time in redis
-  puts "storing sync time in redis on #{OPTS[:redishost]}" if OPTS[:verbose]
+  puts "storing sync time in redis on #{OPTS[:redishost]}"
   redis = Redis.new(:host => OPTS[:redishost])
   redis['roachf_init_time'] = sync_time
 end
 
 # Reset network cores
+puts "resetting network interfaces"
 fe_fids.each do |fe, fid|
-  puts "resetting #{fe.host} network interfaces" if OPTS[:verbose]
+  puts "  resetting #{fe.host} network interfaces" if OPTS[:verbose]
   [0, 1, 0].each do |v|
     fe.eth_cnt_rst = v
     fe.eth_gpu_rst = v
@@ -211,14 +215,16 @@ fe_fids.each do |fe, fid|
 end
 
 # Enable network transmission
+puts "enable transmission to X engines"
 fe_fids.each do |fe, fid|
-  puts "enable #{fe.host} transmission to X engines" if OPTS[:verbose]
+  puts "  enable #{fe.host} transmission to X engines" if OPTS[:verbose]
   fe.eth_gpu_en = 1
 end
 
+puts "enable transmission to switch"
 fe_fids.each do |fe, fid|
-  puts "enable #{fe.host} transmission to switch" if OPTS[:verbose]
+  puts "  enable #{fe.host} transmission to switch" if OPTS[:verbose]
   fe.eth_sw_en = 1
 end
 
-puts 'done' if OPTS[:verbose]
+puts 'all done'
