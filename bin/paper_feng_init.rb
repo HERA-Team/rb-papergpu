@@ -15,7 +15,7 @@ require 'redis'
 OPTS = {
   :ctmode    => 0,
   :redishost => 'redishost',
-  :sync      => false,
+  :sync      => true,
   :verbose   => false
 }
 
@@ -37,7 +37,7 @@ OP = OptionParser.new do |op|
         "Host running redis-server [#{OPTS[:redishost]}]") do |o|
     OPTS[:redishost] = o
   end
-  op.on('-s', '--[no-]sync', "Arm sync generator [#{OPTS[:sync]}]") do |o|
+  op.on('-s', '--no-sync', "Arm sync generator [#{OPTS[:sync]}]") do |o|
     OPTS[:sync] = o
   end
   op.on('-v', '--[no-]verbose', "Be verbose [#{OPTS[:verbose]}]") do |o|
