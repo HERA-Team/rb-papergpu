@@ -104,8 +104,8 @@ fe_fids = host_fids.map do |host, fid|
   # Display RCS revision info
   rcs = fe.rcs
   if rcs[:app].has_key? :rev
-    app_rev = '%07x' % rcs[:app][:rev]
-    lib_rev = '%07x' % rcs[:lib][:rev]
+    app_rev = rcs[:app][:rev]
+    lib_rev = rcs[:lib][:rev]
     puts "#{host} roach2_fengine app/lib revision #{app_rev}/#{lib_rev}"
   end
   [fe, fid]
