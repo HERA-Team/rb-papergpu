@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
-# This script tests the signal levels going into the roach.
+# This script predicts the signal levels throughout the PAPER correlator
+# for a given input RMS, PFB shift amount, fft shift amount, and EQ
+# coefficient.
 
 require 'optparse'
 require 'ostruct'
@@ -17,7 +19,8 @@ OptionParser.new do |op|
 
   op.banner = "Usage: #{op.program_name} [OPTIONS]"
   op.separator('')
-  op.separator('Compute PAPER F engine output levels.')
+  op.separator('Compute predicted signal levels throughout the PAPER correlator')
+  op.separator('for a given input RMS, PFB shift, FFT shift, and EQ coefficient.')
   op.separator('')
   #op.on('-q', '--quant', dest='quantize', default=4, type='int',help='How many bits to quantize to. ')
   op.on('-i', '--in-rms=RMS', Float, "RMS value of input signal [#{OPTS.in_rms}]") do |o|
