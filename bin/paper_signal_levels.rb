@@ -6,7 +6,7 @@
 
 require 'optparse'
 require 'ostruct'
-require 'paper/quantgain'
+require 'papergpu/quantgain'
 
 OPTS = OpenStruct.new
 OPTS.in_rms = 16
