@@ -195,15 +195,23 @@ if OPTS[:sync]
   # we perform the arming "manually" rather than using the #arm_sync method on
   # each F engine.
   fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 0)}
-  # Sleep until just after top of next second
-  sleep(1.1 - (Time.now.to_f % 1))
+# BEGIN WORKAROUND
+#  This code would work if the 1 PPS signal were sync'd to real time (e.g. via
+#  GPS), but in the basement of Evans Hall that is not the case.  So we loop on
+#  the first F engine until its sync_count counter increments.
+#  # Sleep until just after top of next second
+#  sleep(1.1 - (Time.now.to_f % 1))
+  fe0 = fe_fids[0][0]
+  sync_count = fe0.sync_count
+  true while fe0.sync_count == sync_count
+# END WORKAROUND
   # Arm all the F engines
   fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 1)}
+  fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 0)}
   # Compute sync time
   sync_time = Time.now.to_i + 1
-  # Sleep until just adter top of next second (to wait for sync)
-  sleep(1.1 - (Time.now.to_f % 1))
-  fe_fids.each {|fe, fid| fe.wordwrite(:sync_arm, 0)}
+  # Sleep 1 second to wait for sync
+  sleep 1
   # Store sync time in redis
   puts "storing sync time in redis on #{OPTS[:redishost]}"
   redis = Redis.new(:host => OPTS[:redishost])
