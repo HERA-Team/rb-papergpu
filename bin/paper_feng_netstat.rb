@@ -42,9 +42,10 @@ def dump_stat(fe)
   4.times do |eth|
     e = fe.send("eth_#{eth}_sw")
     printf "%s:eth_%d_sw : ", fe.host, eth
-    printf "MAC:%s, IP:%s\n",
+    printf "MAC:%s, IP:%s, XAUI:%s\n",
       [e.mac].pack('Q>').unpack('C*')[2,6].map!{|i| '%02x' % i}.join('-'),
-      IPAddr.new(e.ip, Socket::AF_INET)
+      IPAddr.new(e.ip, Socket::AF_INET),
+      e.xaui_status_ok? ? 'OK' : 'BAD'
   end
 
   # For each switch ethernet interface, print status info
@@ -65,9 +66,10 @@ def dump_stat(fe)
   4.times do |eth|
     e = fe.send("eth_#{eth}_gpu")
     printf "%s:eth_%d_gpu : ", fe.host, eth
-    printf "MAC:%s, IP:%s\n",
+    printf "MAC:%s, IP:%s, XAUI:%s\n",
       [e.mac].pack('Q>').unpack('C*')[2,6].map!{|i| '%02x' % i}.join('-'),
-      IPAddr.new(e.ip, Socket::AF_INET)
+      IPAddr.new(e.ip, Socket::AF_INET),
+      e.xaui_status_ok? ? 'OK' : 'BAD'
   end
 
   # For each GPU ethernet interface, print status info
