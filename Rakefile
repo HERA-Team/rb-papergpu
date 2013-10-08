@@ -16,7 +16,7 @@ spec = Gem::Specification.new do |s|
     EOD
   #s.platform = Gem::Platform::Ruby
   s.required_ruby_version = '>= 1.8.7'
-  s.add_dependency('katcp', '~> 0.0.8.dev')
+  s.add_dependency('katcp', '~> 0.1.10')
   s.add_dependency('redis', '~> 3.0.2')
 
   # About
@@ -28,8 +28,14 @@ spec = Gem::Specification.new do |s|
   # Files, Libraries, and Extensions
   s.files = %w[
     bin/paper_ctl.rb
+    bin/paper_feng_init.rb
+    bin/paper_feng_netstat.rb
+    bin/paper_signal_levels.rb
+    bin/paper_switch_config.rb
     lib/papergpu.rb
     lib/papergpu/fengine.rb
+    lib/papergpu/quantgain.rb
+    lib/papergpu/roach2_fengine.rb
     lib/papergpu/typemap.rb
     lib/papergpu/version.rb
   ]
@@ -38,6 +44,10 @@ spec = Gem::Specification.new do |s|
   #s.bindir = 'bin'
   s.executables = %w[
     paper_ctl.rb
+    paper_feng_init.rb
+    paper_feng_netstat.rb
+    paper_signal_levels.rb
+    paper_switch_config.rb
   ]
   #s.default_executable = nil
 
