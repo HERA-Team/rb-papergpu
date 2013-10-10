@@ -13,10 +13,8 @@ include Hashpipe::RedisKeys
 
 # Computes mcounts per second.  chan_per_pkt must be a factor of 1024 for
 # correct results.  Rounds up to the nearest multiple of 2048.
-def mcnts_per_second(chan_per_pkt=64)
-  bytes_per_pkt = 8192
-  inputs_per_pkt = 8
-  spectra_per_mcnt = bytes_per_pkt/inputs_per_pkt/chan_per_pkt
+#
+def mcnts_per_second(spectra_per_mcnt=8)
   mcnt_per_spectrum = Rational(1, spectra_per_mcnt)
 
   samples_per_spectrum = 2048
