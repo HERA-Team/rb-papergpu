@@ -123,9 +123,29 @@ puts "Max GPUMCNT is %d  (range %d)" % [max_gpumcnt, max_gpumcnt - min_gpumcnt]
 puts "Delay  MCNT is %d" % intdelay_mcnts
 puts "Sync   MCNT is %d" % intsync
 
+start_msg = "INTSYNC=#{intsync}\nINTCOUNT=#{OPTS[:intcount]}\nINTSTAT=start"
+stop_msg = "INTSTAT=stop"
+
+if cmd == 'test'
+  puts "start_msg"
+  puts "--"
+  puts start_msg
+  puts "--"
+  puts "stop_msg"
+  puts "--"
+  puts stop_msg
+  puts "--"
+  exit
+end
+
+msg = case cmd
+      when 'start'; start_msg
+      when 'stop' ; stop_msg
+      when 'test' ; nil
+      else
+        # Should never happen
+        raise "Invalid command: '#{cmd}'"
+      end
+
 #puts(<<-END) if cmd == 'start'
-redis.publish(bcast_set_channel, <<-END) if cmd == 'start'
-INTSYNC=#{intsync}
-INTCOUNT=#{OPTS[:intcount]}
-INTSTAT=start
-END
+redis.publish(bcast_set_channel, msg) if msg
