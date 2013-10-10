@@ -28,6 +28,8 @@ end
 
 
 OPTS = {
+  :num_xbox => 8,
+  :num_inst => 4,
   :intcount => 2048,
   :intdelay => 10,
   :server   => 'redishost',
@@ -51,14 +53,17 @@ OP = OptionParser.new do |op|
     # TODO Put reasonable bounds on it
     OPTS[:intcount] = o
   end
-  #op.on('-i', '--instances=I[,...]', Array,
-  #      "Instances to gateway [#{OPTS[:instance_ids]}]") do |o|
-  #  OPTS[:instance_ids] = o.map {|s| Integer(s) rescue 0}
-  #  OPTS[:instance_ids].uniq!
-  #end
+  op.on('-i', '--numinst=N', Integer,
+        "Number of instances per X host [#{OPTS[:num_inst]}]") do |o|
+    OPTS[:num_inst] = o
+  end
   op.on('-s', '--server=NAME',
         "Host running redis-server [#{OPTS[:server]}]") do |o|
     OPTS[:server] = o
+  end
+  op.on('-x', '--numxhost=N', Integer,
+        "Number of X hosts [#{OPTS[:num_xbox]}]") do |o|
+    OPTS[:num_inst] = o
   end
   op.separator('')
   op.on_tail('-h','--help','Show this message') do
@@ -75,8 +80,11 @@ if cmd != 'start' && cmd != 'stop' && cmd != 'test'
   exit 1
 end
 
-# Create status keys for px1/0 to px8/1
-STATUS_KEYS = (1..8).to_a.product([0,1]).map {|x,i| status_key("px#{x}", i)}
+# Create status keys for px1/0 to px#{num_xbox}/#{num_inst-1}
+xboxes = (1..OPTS[:num_xbox]).to_a
+insts  = (0...OPTS[:num_inst]).to_a
+STATUS_KEYS = xboxes.product(insts).map {|x,i| status_key("px#{x}", i)}
+#p STATUS_KEYS; exit
 
 # Function to get values for Hashpipe status key +skey+ from all Redis keys +hkeys+
 # hashes in Redis.
