@@ -46,8 +46,8 @@ OP = OptionParser.new do |op|
     # TODO Put reasonable bounds on it
     OPTS[:intdelay] = o
   end
-  op.on('-n', '--intcount=MCNTS', Integer,
-        "MCOUNTs per integration [#{OPTS[:intcount]}]") do |o|
+  op.on('-n', '--intcount=N', Integer,
+        "GPU blocks per integration [#{OPTS[:intcount]}]") do |o|
     # TODO Put reasonable bounds on it
     OPTS[:intcount] = o
   end
