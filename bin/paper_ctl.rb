@@ -87,7 +87,7 @@ def get_hashpipe_status_values(redis, skey, *hkeys)
   end
 end
 
-redis = Redis.new(:host => 'paper.paper.pvt')
+redis = Redis.new(:host => OPTS[:server])
 
 gpumcnts = get_hashpipe_status_values(redis, 'GPUMCNT', STATUS_KEYS)
 #p gpumcnts
