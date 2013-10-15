@@ -14,7 +14,10 @@ require 'redis'
 
 OPTS = {
   :ctmode    => 0,
+  :eq        => Rational(400),
+  :fftshift  => (1<<11)-1, # All 11 stages
   :redishost => 'redishost',
+  :seed      => 0x11111111,
   :sync      => true,
   :verbose   => false
 }
@@ -29,6 +32,14 @@ OP = OptionParser.new do |op|
   op.separator('and FID will be N-1 (e.g. "pf1" will get FID=0).');
   op.separator('')
   op.separator('Options:')
+  op.on('-e', '--eq=COEFF', Integer,
+        "Specify FFT shift schedule [#{OPTS[:eq]}]") do |o|
+    OPTS[:eq] = Rational((128*Rational(o)).round, 128)
+  end
+  op.on('-f', '--fftshift=SHIFTVAL', Integer,
+        "Specify FFT shift schedule [#{OPTS[:fftshift]}]") do |o|
+    OPTS[:fftshift] = o
+  end
   op.on('-m', '--mode=CTMODE', Integer,
         "Specify corner turner mode [#{OPTS[:ctmode]}]") do |o|
     OPTS[:ctmode] = o
@@ -125,6 +136,22 @@ fe_fids.each do |fe, fid|
   fe.fid = fid
 end
 
+# Set FFT shift
+puts "setting fftshift to #{OPTS[:fftshift]}"
+fe_fids.each do |fe, fid|
+  fe.fft_shift = OPTS[:fftshift]
+end
+
+# Set EQ
+puts "setting eq to #{OPTS[:eq]}"
+eq = NArray.int(2048).add!(128*OPTS[:eq])
+fe_fids.each do |fe, fid|
+  16.times do |i|
+    bram = fe.send("eq_#{i}_coeffs")
+    bram[0] = eq
+  end
+end
+
 # Setup details ofr 10 GbE cores
 sw_mac_base = 0x0202_0a0a_0a00
 sw_ip_base  =      0x0a0a_0a00
@@ -216,6 +243,19 @@ if OPTS[:sync]
   puts "storing sync time in redis on #{OPTS[:redishost]}"
   redis = Redis.new(:host => OPTS[:redishost])
   redis['roachf_init_time'] = sync_time
+
+  puts "seeding noise generators"
+  fe_fids.each do |fe, fid|
+    fe.seed_0 = OPTS[:seed]
+    fe.seed_1 = OPTS[:seed]
+    fe.seed_2 = OPTS[:seed]
+    fe.seed_3 = OPTS[:seed]
+  end
+
+  puts "arming noise generator(s)"
+  sync_count = fe0.sync_count
+  true while fe0.sync_count == sync_count
+  fe_fids.each {|fe, fid| fe.arm_noise}
 end
 
 # Reset network cores
