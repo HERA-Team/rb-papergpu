@@ -95,57 +95,71 @@ def get_hashpipe_status_values(redis, skey, *hkeys)
   end
 end
 
+def start(redis)
+  gpumcnts = get_hashpipe_status_values(redis, 'GPUMCNT', STATUS_KEYS)
+  #p gpumcnts
+  gpumcnts.compact!
+  #p gpumcnts
+
+  if gpumcnts.empty?
+    puts "#{File.basename($0)}: no GPUMCNT values found, cannot start"
+    return
+  end
+
+  if gpumcnts.length != STATUS_KEYS.length
+    missing = STATUS_KEYS.length - gpumcnts.length
+    puts "#{File.basename($0)}: warning: missing GPUMCNT for #{missing} X engine instances"
+  end
+
+  # Convert to ints
+  gpumcnts.map! {|s| s.to_i(0)}
+  #p gpumcnts
+
+  min_gpumcnt, max_gpumcnt = gpumcnts.minmax
+  #p [min_gpumcnt, max_gpumcnt]; exit
+
+  intdelay_mcnts = (((OPTS[:intdelay] * mcnts_per_second) + 2047).floor / 2048) * 2048
+
+  intsync = max_gpumcnt + intdelay_mcnts
+
+  puts "Min GPUMCNT is %d" % min_gpumcnt
+  puts "Max GPUMCNT is %d  (range %d)" % [max_gpumcnt, max_gpumcnt - min_gpumcnt]
+  puts "Delay  MCNT is %d" % intdelay_mcnts
+  puts "Sync   MCNT is %d" % intsync
+
+  start_msg = "INTSYNC=#{intsync}\nINTCOUNT=#{OPTS[:intcount]}\nINTSTAT=start"
+
+  redis.publish(bcast_set_channel, start_msg)
+end
+
+def stop(redis)
+  intstats = get_hashpipe_status_values(redis, 'INTSTAT', STATUS_KEYS)
+  #p intstats
+  intstats.compact!
+  #p intstats
+
+  if intstats.empty?
+    puts "#{File.basename($0)}: no INTSTAT values found, nothing to stop"
+    return
+  end
+
+  if intstats.length != STATUS_KEYS.length
+    missing = STATUS_KEYS.length - intstats.length
+    puts "#{File.basename($0)}: warning: missing INTSTAT for #{missing} X engine instances"
+  end
+
+  stop_msg = "INTSTAT=stop"
+
+  redis.publish(bcast_set_channel, stop_msg)
+end
+
 redis = Redis.new(:host => OPTS[:server])
 
-gpumcnts = get_hashpipe_status_values(redis, 'GPUMCNT', STATUS_KEYS)
-#p gpumcnts
-gpumcnts.compact!
-#p gpumcnts
-
-if gpumcnts.length != STATUS_KEYS.length
-  missing = STATUS_KEYS.length - gpumcnts.length
-  puts "Warning: missing GPUMCNT for #{missing} X engine instances"
+case cmd
+when 'start'; start(redis)
+when 'stop' ; stop(redis)
+when 'test' ; nil
+else
+  # Should never happen
+  raise "Invalid command: '#{cmd}'"
 end
-
-# Convert to ints
-gpumcnts.map! {|s| s.to_i(0)}
-#p gpumcnts
-
-min_gpumcnt, max_gpumcnt = gpumcnts.minmax
-#p [min_gpumcnt, max_gpumcnt]; exit
-
-intdelay_mcnts = (((OPTS[:intdelay] * mcnts_per_second) + 2047).floor / 2048) * 2048
-
-intsync = max_gpumcnt + intdelay_mcnts
-
-puts "Min GPUMCNT is %d" % min_gpumcnt
-puts "Max GPUMCNT is %d  (range %d)" % [max_gpumcnt, max_gpumcnt - min_gpumcnt]
-puts "Delay  MCNT is %d" % intdelay_mcnts
-puts "Sync   MCNT is %d" % intsync
-
-start_msg = "INTSYNC=#{intsync}\nINTCOUNT=#{OPTS[:intcount]}\nINTSTAT=start"
-stop_msg = "INTSTAT=stop"
-
-if cmd == 'test'
-  puts "start_msg"
-  puts "--"
-  puts start_msg
-  puts "--"
-  puts "stop_msg"
-  puts "--"
-  puts stop_msg
-  puts "--"
-  exit
-end
-
-msg = case cmd
-      when 'start'; start_msg
-      when 'stop' ; stop_msg
-      when 'test' ; nil
-      else
-        # Should never happen
-        raise "Invalid command: '#{cmd}'"
-      end
-
-#puts(<<-END) if cmd == 'start'
-redis.publish(bcast_set_channel, msg) if msg
