@@ -260,6 +260,22 @@ module Paper
         insel_vals.each_with_index {|v, i| send("input_sel#{i}=", v)}
       end # case opts
     end
+    
+    # Sets inputs selectors.
+    # If +val+ is a Fixnum, sets all four insel registers to that value.
+    # If +val+ is an Array, sets the four insel registers to the first four
+    # values from the Array.  Use nil to avoid writing to a register.
+    # If +val+ is a Hash, same as insel(val).
+    def insel=(val)
+      case val
+      when Fixnum
+        4.times {|i| send("input_sel#{i}=", val)}
+      when Array
+        val.each_with_index {|v,i| send("input_sel#{i}=", v) if v}
+      when Hash
+        insel(val)
+      end
+    end
 
     # Used to parameterize delay width.  It used to be 4 bits per input over 4
     # registers, but now it is 8 bits per input over 8 registers.
