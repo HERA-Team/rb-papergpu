@@ -101,16 +101,17 @@ fids = host_fids.map {|host, fid| fid}
 # Create Roach2Fengine objects
 fe_fids = host_fids.map do |host, fid|
   puts "connecting to #{host}"
-  fe = Paper::Roach2Fengine.new(host)
+  fe = Paper::Roach2Fengine.new(host) rescue nil
+  return nil unless fe
   # Verify that device is already programmed
   if ! fe.programmed?
     puts "error: #{host} is not programmed"
-    exit 1
+    return nil
   end
   # Verify that given design appears to be the roach2_fengine
   if ! fe.listdev.grep('eth_0_xip').any?
     puts "error: #{host} is not programmed with an roach2_fengine design."
-    exit 1
+    return nil
   end
   # Display RCS revision info
   rcs = fe.rcs
@@ -121,6 +122,9 @@ fe_fids = host_fids.map do |host, fid|
   end
   [fe, fid]
 end
+
+# Compact fe_fids (remove nils) in case any errors were encountered
+fe_fids.compact!
 
 # Disable network transmission
 puts "disabling network transmission"
