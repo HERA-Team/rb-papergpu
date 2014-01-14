@@ -14,7 +14,7 @@ require 'redis'
 
 OPTS = {
   :ctmode    => 0,
-  :eq        => Rational(400),
+  :eq        => Rational(600),
   :fftshift  => (1<<11)-1, # All 11 stages
   :redishost => 'redishost',
   :seed      => 0x11111111,
