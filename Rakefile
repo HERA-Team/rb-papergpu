@@ -30,6 +30,7 @@ spec = Gem::Specification.new do |s|
     bin/paper_ctl.rb
     bin/paper_feng_init.rb
     bin/paper_feng_netstat.rb
+    bin/paper_feng_sync.rb
     bin/paper_redis_spec.rb
     bin/paper_signal_levels.rb
     bin/paper_switch_config.rb
@@ -47,6 +48,7 @@ spec = Gem::Specification.new do |s|
     paper_ctl.rb
     paper_feng_init.rb
     paper_feng_netstat.rb
+    paper_feng_sync.rb
     paper_redis_spec.rb
     paper_signal_levels.rb
     paper_switch_config.rb
