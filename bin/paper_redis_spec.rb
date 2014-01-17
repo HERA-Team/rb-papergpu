@@ -31,7 +31,7 @@ width  = 128
 height =  96
 
 # Number of subplots in X and Y directions
-nx =  8
+nx =  16
 ny = (NANTS + nx - 1) / nx
 
 # Set size of graphic
