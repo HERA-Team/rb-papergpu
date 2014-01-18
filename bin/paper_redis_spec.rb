@@ -27,8 +27,8 @@ sdf = bw / nchan
 freqs = NArray.float(nchan).indgen!.mul!(sdf).add!(f0+sdf/2)
 
 # Pixel size of subplot
-width  = 128
-height =  96
+width  =  96
+height = 128
 
 # Number of subplots in X and Y directions
 nx =  16
