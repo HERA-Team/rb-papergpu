@@ -19,6 +19,7 @@ OPTS = {
   :redishost => 'redishost',
   :seed      => 0x11111111,
   :sync      => true,
+  :noise     => false,
   :verbose   => false
 }
 
@@ -50,6 +51,9 @@ OP = OptionParser.new do |op|
   end
   op.on('-s', '--no-sync', "Arm sync generator [#{OPTS[:sync]}]") do |o|
     OPTS[:sync] = o
+  end
+  op.on('-n', '--noise', "Use digital noise generators [#{OPTS[:noise]}]") do |o|
+    OPTS[:noise] = o
   end
   op.on('-v', '--[no-]verbose', "Be verbose [#{OPTS[:verbose]}]") do |o|
     OPTS[:verbose] = o
@@ -260,6 +264,13 @@ if OPTS[:sync]
   sync_count = fe0.sync_count
   true while fe0.sync_count == sync_count
   fe_fids.each {|fe, fid| fe.arm_noise}
+end
+
+if OPTS[:noise]
+  puts "Setting F-Engine inputs to digital noise generators"
+  fe_fids.each do |fe, fid|
+    fe.insel(:n0 => 0..31)
+  end
 end
 
 # Reset network cores
