@@ -277,6 +277,11 @@ if OPTS[:noise]
   fe_fids.each do |fe, fid|
     fe.insel(:n0 => 0..31)
   end
+else
+  puts "Setting F-Engine inputs to ADC signals"
+  fe_fids.each do |fe, fid|
+    fe.insel(:adc => 0..31)
+  end
 end
 
 # Reset network cores
