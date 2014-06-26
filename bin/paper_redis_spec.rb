@@ -54,7 +54,8 @@ NANTS.times do |a|
     jd = ((xx||yy)['time']||0).to_f
 
     filename = 'rms.%.5f.png' % jd
-    Plotter.new(:device=>"#{filename}/png", :nx=>nx, :ny=>ny, :ask=>false)
+    device = ENV['PGPLOT_DEV'] || "#{filename}/png"
+    Plotter.new(:device=>device, :nx=>nx, :ny=>ny, :ask=>false)
     ch = pgqch
   end
 
