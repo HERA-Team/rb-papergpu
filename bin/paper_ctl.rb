@@ -127,7 +127,7 @@ def start(redis)
   puts "Delay  MCNT is %d" % intdelay_mcnts
   puts "Sync   MCNT is %d" % intsync
 
-  start_msg = "INTSYNC=#{intsync}\nINTCOUNT=#{OPTS[:intcount]}\nINTSTAT=start"
+  start_msg = "INTSYNC=#{intsync}\nINTCOUNT=#{OPTS[:intcount]}\nINTSTAT=start\nOUTDUMPS=0"
 
   redis.publish(bcast_set_channel, start_msg)
 end
