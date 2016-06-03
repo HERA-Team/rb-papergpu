@@ -87,7 +87,7 @@ OPTS = {
   :intdelay  => 10,
   :longitude => 18.4239,
   :inttime   => 10.73741824,
-  :mcnt_gran => 128,
+  :mcnt_gran => 64,
   :utc       => 16.0,
   :server    => 'redishost',
 }
