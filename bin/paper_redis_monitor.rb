@@ -146,7 +146,7 @@ def check_outdumps
     puts "No OUTDUMPS values found"
   else
     # Find bad OUTDUMPS (TODO Compare with calculated OUTDUMPS value?)
-    bad_outdumps = outdumps.find_all {|i, v| v < max_outdumps - 1}
+    bad_outdumps = outdumps.find_all {|i, v| v && (v < max_outdumps - 1)}
 
     # Output message about any bad outdump values
     if bad_outdumps.empty?
